@@ -2,35 +2,40 @@ import { Component, OnInit } from '@angular/core';
 import { Product } from '../../common/product';
 import { ProductService } from '../../services/product.service';
 import { ActivatedRoute } from '@angular/router';
+import { CartItem } from '../../common/cart-item';
+import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-product-details',
   standalone: false,
   templateUrl: './product-details.component.html',
-  styleUrl: './product-details.component.css'
+  styleUrl: './product-details.component.css',
 })
-export class ProductDetailsComponent implements OnInit{
-
+export class ProductDetailsComponent implements OnInit {
   product!: Product;
 
   constructor(
     private productService: ProductService,
-    private route: ActivatedRoute
-  ){}
+    private route: ActivatedRoute,
+    private cartService: CartService
+  ) {}
 
   ngOnInit(): void {
-   this.route.paramMap.subscribe(() => {
-    this.handleProductDetails();
-   })
+    this.route.paramMap.subscribe(() => {
+      this.handleProductDetails();
+    });
   }
 
   handleProductDetails() {
     const theProductId: number = +this.route.snapshot.paramMap.get('id')!;
-    this.productService.getProduct(theProductId).subscribe(
-      data=>{
-        this.product = data;
-      }
-    )
+    this.productService.getProduct(theProductId).subscribe((data) => {
+      this.product = data;
+    });
   }
 
+  addToCart() {
+    console.log(`Adding to Cart: ${this.product.name}, ${this.product.unitPrice}`);
+    const theCartItem = new CartItem(this.product);
+    this.cartService.addToCart(theCartItem);
+  }
 }

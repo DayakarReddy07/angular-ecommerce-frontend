@@ -9,6 +9,12 @@ import { Luv2ShopFormService } from '../../services/luv2-shop-form.service';
 import { Country } from '../../common/country';
 import { State } from '../../common/state';
 import { Luv2ShopValidators } from '../../validators/luv2-shop-validators';
+import { CartService } from '../../services/cart.service';
+import { CheckoutService } from '../../services/checkout.service';
+import { Router } from '@angular/router';
+import { Order } from '../../common/order';
+import { OrderItem } from '../../common/order-item';
+import { Purchase } from '../../common/purchase';
 
 @Component({
   selector: 'app-checkout',
@@ -32,9 +38,13 @@ export class CheckoutComponent {
   constructor(
     private formBuilder: FormBuilder,
     private luv2ShopFormService: Luv2ShopFormService,
+    private cartService: CartService,
+    private checkoutService: CheckoutService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
+    this.reviewCartDetails();
     this.checkoutFormGroup = this.formBuilder.group({
       customer: this.formBuilder.group({
         firstName: new FormControl('', [
@@ -204,17 +214,83 @@ export class CheckoutComponent {
   }
 
   onSubmit() {
-    console.log('Handling the submit button');
-
     if (this.checkoutFormGroup.invalid) {
       this.checkoutFormGroup.markAllAsTouched();
+      return;
     }
 
-    console.log(this.checkoutFormGroup.get('customer')?.value);
-    console.log(
-      'The email address is : ' +
-        this.checkoutFormGroup.get('customer')?.value.email,
+    // set up the order
+    let order = new Order();
+    order.totalPrice = this.totalPrice;
+    order.totalQuantity = this.totalQuantity;
+
+    //get cart items
+    /*
+    const cartItems = this.cartService.cartItems;
+    let orderItems: OrderItem[] = [];
+    for(let i=0;i<cartItems.length;i++){
+      orderItems[i] = new OrderItem(cartItems[i]);
+    } */
+    const cartItems = this.cartService.cartItems;
+    let orderItems: OrderItem[] = cartItems.map(
+      (tempCartItem) => new OrderItem(tempCartItem),
     );
+
+    //setup purchase
+    let purchase = new Purchase();
+
+    //populate purchase - customer
+    purchase.customer = this.checkoutFormGroup.controls['customer'].value;
+
+    // Shipping Address
+purchase.shippingAddress =
+  this.checkoutFormGroup.get('shippingAddress')?.value;
+
+purchase.shippingAddress.state =
+  (purchase.shippingAddress.state as any).name;
+
+purchase.shippingAddress.country =
+  (purchase.shippingAddress.country as any).name;
+
+// Billing Address
+purchase.billingAddress =
+  this.checkoutFormGroup.get('billingAddress')?.value;
+
+purchase.billingAddress.state =
+  (purchase.billingAddress.state as any).name
+
+purchase.billingAddress.country =
+  (purchase.billingAddress.country as any).name
+
+
+    //populate purchase - order and order Items
+    purchase.order = order;
+    purchase.orderItems = orderItems;
+
+    //call REST API via the Checkout Service
+    this.checkoutService.placeOrder(purchase).subscribe({
+      next: (response) => {
+        alert(
+          `Your Order has been received.\nOrder tracking number: ${response.orderTrackingNumber} `,
+        );
+        // reset cart
+        this.resetCart();
+      },
+      error: (err) => {
+        alert(`There was an error: ${err.message}`);
+      },
+    });
+  }
+
+  resetCart(){
+    // reset cart data
+    this.cartService.cartItems = [];
+    this.cartService.totalPrice.next(0);
+    this.cartService.totalQuantity.next(0);
+    // reset the form
+    this.checkoutFormGroup.reset();
+    //navigate back to the products page
+    this.router.navigateByUrl("/products");
   }
 
   handleMonthAndYears() {
@@ -252,6 +328,17 @@ export class CheckoutComponent {
       }
       // select first item by default
       formGroup?.get('state')?.setValue(data[0]);
+    });
+  }
+
+  reviewCartDetails() {
+    // subscribe to cart service. total quantity
+    this.cartService.totalQuantity.subscribe((totalQuantity) => {
+      this.totalQuantity = totalQuantity;
+    });
+    //subscribe to cartService.totalPrice
+    this.cartService.totalPrice.subscribe((totalPrice) => {
+      this.totalPrice = totalPrice;
     });
   }
 }

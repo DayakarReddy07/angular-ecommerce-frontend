@@ -35,6 +35,8 @@ export class CheckoutComponent {
   shippingAddressStates: State[] = [];
   billingAddressStates: State[] = [];
 
+  storage: Storage = sessionStorage;
+
   constructor(
     private formBuilder: FormBuilder,
     private luv2ShopFormService: Luv2ShopFormService,
@@ -45,6 +47,9 @@ export class CheckoutComponent {
 
   ngOnInit(): void {
     this.reviewCartDetails();
+
+    const theEmail = JSON.parse(this.storage.getItem('userEmail')!);
+
     this.checkoutFormGroup = this.formBuilder.group({
       customer: this.formBuilder.group({
         firstName: new FormControl('', [
@@ -57,7 +62,7 @@ export class CheckoutComponent {
           Validators.minLength(2),
           Luv2ShopValidators.notOnlyWhiteSpace,
         ]),
-        email: new FormControl('', [
+        email: new FormControl(theEmail, [
           Validators.required,
           Validators.pattern('^[a-z0-9._&+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$'),
         ]),
@@ -243,25 +248,26 @@ export class CheckoutComponent {
     purchase.customer = this.checkoutFormGroup.controls['customer'].value;
 
     // Shipping Address
-purchase.shippingAddress =
-  this.checkoutFormGroup.get('shippingAddress')?.value;
+    purchase.shippingAddress =
+      this.checkoutFormGroup.get('shippingAddress')?.value;
 
-purchase.shippingAddress.state =
-  (purchase.shippingAddress.state as any).name;
+    purchase.shippingAddress.state = (
+      purchase.shippingAddress.state as any
+    ).name;
 
-purchase.shippingAddress.country =
-  (purchase.shippingAddress.country as any).name;
+    purchase.shippingAddress.country = (
+      purchase.shippingAddress.country as any
+    ).name;
 
-// Billing Address
-purchase.billingAddress =
-  this.checkoutFormGroup.get('billingAddress')?.value;
+    // Billing Address
+    purchase.billingAddress =
+      this.checkoutFormGroup.get('billingAddress')?.value;
 
-purchase.billingAddress.state =
-  (purchase.billingAddress.state as any).name
+    purchase.billingAddress.state = (purchase.billingAddress.state as any).name;
 
-purchase.billingAddress.country =
-  (purchase.billingAddress.country as any).name
-
+    purchase.billingAddress.country = (
+      purchase.billingAddress.country as any
+    ).name;
 
     //populate purchase - order and order Items
     purchase.order = order;
@@ -282,7 +288,7 @@ purchase.billingAddress.country =
     });
   }
 
-  resetCart(){
+  resetCart() {
     // reset cart data
     this.cartService.cartItems = [];
     this.cartService.totalPrice.next(0);
@@ -290,7 +296,7 @@ purchase.billingAddress.country =
     // reset the form
     this.checkoutFormGroup.reset();
     //navigate back to the products page
-    this.router.navigateByUrl("/products");
+    this.router.navigateByUrl('/products');
   }
 
   handleMonthAndYears() {

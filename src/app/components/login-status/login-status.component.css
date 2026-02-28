@@ -6,7 +6,7 @@
   border: 10px solid #205b8d;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
-  border-radius: 0;
+  border-radius: 4px;
   background: #205b8d;
 }
 
@@ -16,6 +16,7 @@
   display: -moz-box;
   display: -ms-flexbox;
   display: flex;
+  /* gap: 10px; */
 }
 
 .login-status-user-info {
